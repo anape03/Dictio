@@ -3,12 +3,6 @@ import json
 from wiktionaryparser import WiktionaryParser
 
 
-def printData(all_data, title=''):
-        text = title+':\n'
-        for i in range(len(all_data)):
-            text += all_data[i] + '\n'
-        return text
-
 class Client(discord.Client):
 
     def getWordData(message):
@@ -34,9 +28,7 @@ class Client(discord.Client):
 
         # help
         if message.content.startswith(prefix+'help'):
-            help_mes = discord.Embed(
-                title = "Available Commands",
-                color = discord.Color.green())
+            help_mes = discord.Embed(title = "Available Commands", color = discord.Color.green())
 
             help_mes.add_field(name="Pronounciation:", value=prefix+"pron <your word> (<language>)", inline=False)
             help_mes.add_field(name="Definition:", value=prefix+"def <your word> (<language>)", inline=False)
@@ -47,23 +39,12 @@ class Client(discord.Client):
             help_mes.add_field(name="*Please note!*", value="anything in parenthesis is optional, unless you're looking for a word in language different than default language (english).", inline=False)
             
             await message.channel.send(embed=help_mes)
-
-#             await message.channel.send('**Available commands:** \n\
-# \n**Pronounciation:**\n\t'+prefix+'pron <your word> (<language>)\n\
-# **Definition:**\n\t'+prefix+'def <your word> (<language>)\n\
-# **Examples:**\n\t'+prefix+'ex <your word> (<language> <max number of examples>)\n\
-# **Etymology:**\n\t'+prefix+'etym <your word> (<language>)\n\
-# **Change Prefix:**\n\t'+prefix+'prefix <new prefix>\n\
-# \n**Please note:** anything in parenthesis is optional, unless you\'re looking\n\
-# for a word in language different than default language ('+parser.get_default_language()+').\n\
-# \nYou may change the default language using the command: \n\
-# '+prefix+'dlang <your preferred language in english>')
             return
 
         # change defaul language
         elif message.content.startswith(prefix+'dlang'):
             new_lang = message.content.split()[1]
-            # must check weather a valid language was chosen
+            # must check whether a valid language was chosen ######
             parser.set_default_language(new_lang)
             await message.channel.send('Default language has been been changed to '+parser.get_default_language())
             return
@@ -71,47 +52,76 @@ class Client(discord.Client):
         # pronunciations
         elif message.content.startswith(prefix+'pron'):
             worddata = Client.getWordData(message)
+            mes = discord.Embed(title = "Pronounciation(s) for \""+message.content.split()[1]+"\":", color = discord.Color.green())
             if worddata is None:
-                await message.channel.send('Could not find pronounciation for this word.'+word_error_mes)
+                mes.add_field(name="\u200b", value="*Could not find pronounciations for this word.*", inline=False)
+                await message.channel.send(embed=mes)
                 return
-            await message.channel.send(printData(worddata['pronunciations']['text'], 'Pronunciation(s)'))
+            text=""
+            for i in range(len(worddata)):
+                text += worddata['pronunciations']['text'][i] + '\n\n'
+            mes.add_field(name="\u200b", value=text, inline=False)
+            await message.channel.send(embed=mes)
             return
             
         # definitions
         elif message.content.startswith(prefix+'def'):
             worddata = Client.getWordData(message)
+            mes = discord.Embed(title = "Definition(s) for \""+message.content.split()[1]+"\":", color = discord.Color.green())
             if worddata is None:
-                await message.channel.send('Could not find definition for this word.'+word_error_mes)
+                mes.add_field(name="\u200b", value="*Could not find definitions for this word.*", inline=False)
+                await message.channel.send(embed=mes)
                 return
-            await message.channel.send(printData(worddata['definitions'][0]['text'], 'Definition(s)'))
+            text=""
+            for i in range(len(worddata)):
+                text += (str(i)+". " if i!=0 else "")+worddata['definitions'][0]['text'][i] + '\n\n'
+            mes.add_field(name="\u200b", value=text, inline=False)
+            await message.channel.send(embed=mes)
             return
 
         # examples
         elif message.content.startswith(prefix+'ex'):
-            com = [message.content.split()]
+            com = message.content.split()
+            num = 3     # 3 examples as default
             if (len(com) == 4):
                 try:
-                    num = int(message.content.split()[3]) #number of examples
+                    num = int(message.content.split()[3])   # number of examples
                 except ValueError:
                     await message.channel.send("Invalid command")
                     return
+            
             worddata = Client.getWordData(message)
+            mes = discord.Embed(title = "Example(s) for \""+message.content.split()[1]+"\":", color = discord.Color.green())
             if worddata is None:
-                await message.channel.send('Could not find examples for this word.'+word_error_mes)
+                mes.add_field(name="\u200b", value="*Could not find examples for this word.*", inline=False)
+                await message.channel.send(embed=mes)
                 return
-            await message.channel.send(printData(worddata['definitions'][0]['examples'][:3:], 'Examples'))
+
+            totalex = len(worddata['definitions'][0]['examples'])
+            if (totalex < num):
+                num = totalex
+
+            text=""
+            for i in range(num+1):
+                text += (str(i)+". " if i!=0 else "")+worddata['definitions'][0]['examples'][i] + '\n\n'
+            mes.add_field(name="\u200b", value=text, inline=False)
+            await message.channel.send(embed=mes)
+
             return
         
         # etymology
         elif message.content.startswith(prefix+'etym'):     
             worddata = Client.getWordData(message)
+            mes = discord.Embed(title = "Etymology for \""+message.content.split()[1]+"\":", color = discord.Color.green())
             if worddata is None:
-                await message.channel.send('Could not find etymology for this word.'+word_error_mes)
+                mes.add_field(name="\u200b", value="*Could not find etymology for this word.*", inline=False)
+                await message.channel.send(embed=mes)
                 return
-            print(type(worddata['etymology']))
-            await message.channel.send('Etymology:\n'+worddata['etymology'])
+            mes.add_field(name="\u200b", value=worddata['etymology'], inline=False)
+            await message.channel.send(embed=mes)
             return
 
+        # change prefix
         elif message.content.startswith(prefix+'prefix'):
             if (len(message.content.split()) != 2):
                 await message.channel.send('Invalid command.\nType "'+prefix+'help" for available commands.')
