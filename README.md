@@ -13,3 +13,4 @@ In order to run the bot, create a ```config.json``` file like so:
 ### Requirements
 discord.py==1.7.3  
 wiktionaryparser==0.0.97
+textblob==0.17.1
